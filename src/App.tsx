@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Game } from "./game/engine";
-import { BUILDINGS, BuildKind, RES_INFO, RES_KEYS, Snapshot, ToolKind } from "./game/data";
+import { BUILDINGS, BuildKind, HINTS, RES_INFO, RES_KEYS, Snapshot, ToolKind } from "./game/data";
 
 const TABS = [
   { id: "priority", label: "Priority", icon: "☰" },
@@ -140,18 +140,38 @@ export default function App() {
             </div>
           </div>
 
-          {/* ---------------- toolbar ---------------- */}
-          <div className="absolute left-[345px] top-2 flex gap-1 pointer-events-auto">
+          {/* ---------------- toolbar (below the corner panels) ---------------- */}
+          <div className="absolute left-[352px] right-[244px] top-2 flex flex-wrap justify-center gap-[3px] pointer-events-auto">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTab(tab === t.id ? null : t.id)}
-                className={`wood-btn w-[48px] h-[56px] flex flex-col items-center justify-center ${tab === t.id ? "active" : ""}`}
+                className={`wood-btn w-[46px] h-[50px] flex flex-col items-center justify-center ${tab === t.id ? "active" : ""}`}
               >
-                <span className="text-xl leading-6">{t.icon}</span>
-                <span className="text-[9px] leading-3 text-[#cbb27c]">{t.label}</span>
+                <span className="text-lg leading-5">{t.icon}</span>
+                <span className="text-[8px] leading-[10px] text-[#cbb27c] text-center">{t.label}</span>
               </button>
             ))}
+          </div>
+
+          {/* ---------------- controls (top-right, collapsible) ---------------- */}
+          <div className="absolute right-2 top-2 w-[232px] pointer-events-auto">
+            <button
+              onClick={() => setHint(!hint)}
+              className="wood-btn w-full flex items-center justify-between px-2 h-8 text-sm"
+            >
+              <span>{hint ? "▾" : "▸"} Controls</span>
+              <span className="text-[11px] text-[#cbb27c]">{hint ? "hide" : "show"}</span>
+            </button>
+            {hint && (
+              <div className="mt-1 text-[13px] leading-[17px] rounded-b wood p-1">
+                {HINTS.map((l) => (
+                  <div key={l} className="px-1 border-b border-[#4a8cbb]/40 last:border-0">
+                    {l}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* ---------------- resources ---------------- */}
@@ -167,30 +187,8 @@ export default function App() {
             ))}
           </div>
 
-          {/* ---------------- help ---------------- */}
-          {hint && (
-            <div className="absolute right-[470px] top-0 w-[300px] text-[15px] leading-[19px] pointer-events-none">
-              {[
-                "WASD  Pan camera",
-                "Q / E / Right-drag: Rotate camera",
-                "Mouse wheel: Zoom",
-                "Click flotage to mark it for salvage",
-                "Click a colonist / object to inspect",
-                "Hammer: build · RMB or Esc: cancel",
-                "Space: pause · 1 2 3: speed",
-              ].map((l) => (
-                <div key={l} className="blue-strip px-1 border-b border-[#4a8cbb]">
-                  {l}
-                </div>
-              ))}
-              <div className="blue-strip px-1 pointer-events-auto cursor-pointer" onClick={() => setHint(false)}>
-                (click to hide these key guides)
-              </div>
-            </div>
-          )}
-
           {/* ---------------- toasts ---------------- */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-[84px] flex flex-col items-center gap-1">
+          <div className="absolute left-1/2 -translate-x-1/2 top-[164px] flex flex-col items-center gap-1">
             {note && <div className="toast wood px-3 py-1 text-lg">{note}</div>}
             {s.toasts.map((t) => (
               <div key={t.id} className="toast wood px-3 py-1 text-lg" style={t.bad ? { color: "#ffb0a0" } : undefined}>
@@ -202,25 +200,54 @@ export default function App() {
           {/* ---------------- flotage tag ---------------- */}
           <button
             onClick={() => game?.focusFlotage()}
-            className="absolute right-0 top-[560px] pointer-events-auto px-3 py-0.5 text-lg"
+            className="absolute right-0 bottom-[168px] pointer-events-auto px-3 py-0.5 text-lg"
             style={{ background: "rgba(36,100,160,0.9)", color: "#e8f4ff", borderLeft: "3px solid #9fd2ff" }}
           >
             Flotage {s.flotageCount > 0 ? `(${s.flotageCount})` : ""}
           </button>
 
+          {/* ---------------- command banner ---------------- */}
+          {s.commanded && (
+            <div
+              className="absolute left-1/2 -translate-x-1/2 bottom-[110px] pointer-events-none px-3 py-0.5 rounded text-base"
+              style={{ background: "rgba(30,60,40,0.85)", color: "#e9ffcf", border: "1px solid #8fc46a" }}
+            >
+              Commanding <b>{s.commanded}</b> – click a target · Esc to release
+            </div>
+          )}
+
           {/* ---------------- selection panel ---------------- */}
           {s.selection && (
-            <div className="absolute left-4 bottom-10 wood p-3 w-[270px] pointer-events-auto">
+            <div className="absolute left-4 bottom-10 wood p-3 w-[286px] pointer-events-auto">
               <div className="text-2xl text-[#fff0c8]">{s.selection.title}</div>
               <div className="text-base mt-1 leading-5">
                 {s.selection.lines.map((l, i) => (
                   <div key={i}>{l}</div>
                 ))}
               </div>
-              <div className="flex gap-2 mt-2">
+              {s.selection.hint && (
+                <div className="text-[13px] leading-4 mt-1 rounded bg-[#4a3220]/70 px-1 py-0.5 text-[#e9d3a2]">
+                  {s.selection.hint}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2 mt-2">
                 {s.selection.canMark && (
                   <button className="wood-btn px-3 py-1" onClick={() => game?.toggleMark()}>
                     {s.selection.marked ? "Cancel salvage" : "Salvage"}
+                  </button>
+                )}
+                {s.selection.canAssign && (
+                  <button
+                    className="wood-btn px-3 py-1"
+                    style={{ borderColor: "#8fc46a" }}
+                    onClick={() => game?.assignSelected()}
+                  >
+                    {s.selection.assignLabel ?? "Assign"}
+                  </button>
+                )}
+                {s.selection.canStop && (
+                  <button className="wood-btn px-3 py-1" onClick={() => game?.stopColonist()}>
+                    Stop
                   </button>
                 )}
                 {s.selection.canDemolish && (
@@ -289,10 +316,21 @@ export default function App() {
                 className="text-left"
                 title={`Hunger ${Math.round(c.hunger)} · Energy ${Math.round(c.energy)} · Health ${Math.round(c.health)}`}
               >
-                <div className="bg-[#2b1a10] border-2 border-[#4a2f1a] rounded px-1 text-center text-xs text-[#f6e3b4] w-[112px] ml-auto">
+                <div
+                  className="border-2 rounded px-1 text-center text-xs w-[112px] ml-auto"
+                  style={{
+                    background: c.swimming ? "#123a52" : "#2b1a10",
+                    borderColor: c.commanded ? "#8fc46a" : "#4a2f1a",
+                    color: c.commanded ? "#e9ffcf" : "#f6e3b4",
+                  }}
+                >
+                  {c.commanded ? "★ " : ""}
                   {c.status}
                 </div>
-                <div className="wood flex items-center gap-1 p-1 w-[128px]">
+                <div
+                  className="wood flex items-center gap-1 p-1 w-[128px]"
+                  style={c.commanded ? { boxShadow: "0 0 0 2px #8fc46a inset" } : undefined}
+                >
                   <div className="w-9 h-9 rounded-sm relative border-2 border-[#3a2515]" style={{ background: c.shirt }}>
                     <div className="absolute left-0 right-0 top-0 h-3" style={{ background: c.hair }} />
                     <div className="absolute left-1 right-1 top-3 h-2 bg-[#f0c8b0]" />
@@ -313,7 +351,7 @@ export default function App() {
 
           {/* ---------------- tab modal ---------------- */}
           {tab && (
-            <div className="absolute left-1/2 -translate-x-1/2 top-[130px] wood p-4 w-[460px] pointer-events-auto max-h-[60vh] overflow-auto">
+            <div className="absolute left-1/2 -translate-x-1/2 top-[196px] wood p-4 w-[460px] pointer-events-auto max-h-[55vh] overflow-auto">
               <div className="flex justify-between items-center mb-2">
                 <div className="text-2xl text-[#fff0c8]">{TABS.find((t) => t.id === tab)!.label}</div>
                 <button className="wood-btn px-2" onClick={() => setTab(null)}>
@@ -322,15 +360,22 @@ export default function App() {
               </div>
               <div className="text-base leading-5">
                 {tab === "priority" && (
-                  <ol className="list-decimal pl-5">
-                    <li>Eat when hungry (needs lemons or fish)</li>
-                    <li>Sleep when exhausted or at night (beds are faster)</li>
-                    <li>Salvage flotage you marked</li>
-                    <li>Construct blueprints</li>
-                    <li>Craft planks at a workbench</li>
-                    <li>Harvest lemons</li>
-                    <li>Fish from a fishing rod</li>
-                  </ol>
+                  <div>
+                    <p className="mb-1">Colonists look after themselves, but every job is your call:</p>
+                    <ol className="list-decimal pl-5">
+                      <li>Automatic · eat lemons or fish when hungry</li>
+                      <li>Automatic · sleep when exhausted or at night</li>
+                      <li>Ordered · swim out and salvage marked flotage</li>
+                      <li>Ordered · construct blueprints</li>
+                      <li>Ordered · saw planks at a workbench</li>
+                      <li>Ordered · harvest lemons</li>
+                      <li>Ordered · fish from a fishing rod</li>
+                    </ol>
+                    <p className="mt-2">
+                      To give an order: click a colonist to take command, then click the flotage, blueprint, tree,
+                      workbench or rod.
+                    </p>
+                  </div>
                 )}
                 {tab === "tech" && (
                   <div>
@@ -383,7 +428,7 @@ export default function App() {
                 {tab === "system" && (
                   <div className="flex flex-col gap-2 items-start">
                     <button className="wood-btn px-3 py-1" onClick={() => setHint(!hint)}>
-                      {hint ? "Hide" : "Show"} key guide
+                      {hint ? "Hide" : "Show"} controls panel
                     </button>
                     <button
                       className="wood-btn px-3 py-1"

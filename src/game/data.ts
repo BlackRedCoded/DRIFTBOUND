@@ -40,7 +40,7 @@ export const BUILDINGS: Record<BuildKind, BuildingDef> = {
   bed: {
     name: "Bed",
     icon: "🛏️",
-    desc: "Colonists sleep 2.5x faster in a bed.",
+    desc: "A colonist ordered to rest here sleeps 2.5x faster.",
     cost: { plank: 5, rope: 2 },
     time: 4,
     weight: 2,
@@ -48,7 +48,7 @@ export const BUILDINGS: Record<BuildKind, BuildingDef> = {
   bench: {
     name: "Workbench",
     icon: "🔨",
-    desc: "Colonists saw 2 wood into 3 planks.",
+    desc: "Assign a colonist here to saw 2 wood into 3 planks.",
     cost: { plank: 6, rope: 1 },
     time: 5,
     weight: 3,
@@ -56,7 +56,7 @@ export const BUILDINGS: Record<BuildKind, BuildingDef> = {
   rod: {
     name: "Fishing Rod",
     icon: "🎣",
-    desc: "Place on the raft edge. Colonists catch fish (and sometimes rope).",
+    desc: "Place on the raft edge. Assign a colonist to catch fish (and rope).",
     cost: { plank: 3, rope: 3 },
     time: 3,
     weight: 1,
@@ -82,6 +82,8 @@ export interface ColonistSnap {
   health: number;
   shirt: string;
   hair: string;
+  swimming?: boolean;
+  commanded?: boolean;
 }
 
 export interface SelectionSnap {
@@ -92,6 +94,11 @@ export interface SelectionSnap {
   canDemolish?: boolean;
   canMark?: boolean;
   marked?: boolean;
+  canStop?: boolean;
+  canAssign?: boolean;
+  /** label for the assignment button, e.g. "Send Niall" */
+  assignLabel?: string;
+  hint?: string;
 }
 
 export interface Toast {
@@ -117,4 +124,19 @@ export interface Snapshot {
   over: boolean;
   floors: number;
   structs: { name: string; count: number }[];
+  /** name of the colonist currently receiving orders */
+  commanded: string | null;
 }
+
+export const HINTS = [
+  "WASD · pan the camera",
+  "Q / E / right-drag · rotate",
+  "Wheel · zoom",
+  "Click a colonist to take command",
+  "Click a marked flotage to swim out",
+  "Click a blueprint / tree / bench / rod",
+  "Click a raft tile to walk there",
+  "Salvage: select flotage, press Salvage",
+  "Space · pause  ·  1 2 3 · speed",
+  "RMB / Esc · cancel",
+];
